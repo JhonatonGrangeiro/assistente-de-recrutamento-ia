@@ -1,0 +1,5 @@
+{
+  "name": "Assistente de Recrutamento IA",
+  "description": "Uma aplicação de recrutamento e seleção com inteligência artificial que ajuda recrutadores a analisar currículos de candidatos em comparação com descrições de vagas para otimizar o processo de contratação.",
+  "requestFramePermissions": []
+}
