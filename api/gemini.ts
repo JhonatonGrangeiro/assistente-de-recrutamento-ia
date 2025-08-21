@@ -1,17 +1,24 @@
-// api/gemini.ts
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+// api/gemini.ts (Edge Runtime)
+export const runtime = 'edge';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: Request) {
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Method not allowed' });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   try {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: 'API key not configured' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const body = await req.json();
 
     const upstream = await fetch(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
@@ -19,17 +26,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-goog-api-key': apiKey,
+          'X-goog-api-key': apiKey
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(body)
       }
     );
 
     const text = await upstream.text();
-    res.status(upstream.ok ? 200 : upstream.status).setHeader('Content-Type', 'application/json');
-    return res.send(text);
+    return new Response(text, {
+      status: upstream.status,
+      headers: { 'Content-Type': 'application/json' }
+    });
   } catch (err: any) {
-    console.error(err);
-    return res.status(500).json({ error: 'Internal error', details: String(err?.message || err) });
+    return new Response(JSON.stringify({ error: 'Internal error', details: String(err?.message || err) }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
